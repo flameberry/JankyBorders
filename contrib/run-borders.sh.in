@@ -1,0 +1,5 @@
+#!/bin/sh
+# Wrapper so borders runs with a known HOME and PATH (for bordersrc and `borders` in PATH).
+export HOME="USER_HOME"
+export PATH="BINARY_DIR:/opt/homebrew/bin:/usr/bin:/bin"
+exec "BINARY_PATH" "$@"

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.jankyborders.fork</string>
+	<key>WorkingDirectory</key>
+	<string>USER_HOME</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>USER_HOME</string>
+		<key>PATH</key>
+		<string>BINARY_DIR:/opt/homebrew/bin:/usr/bin:/bin</string>
+	</dict>
+	<key>ProgramArguments</key>
+	<array>
+		<string>WRAPPER_PATH</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ProcessType</key>
+	<string>Interactive</string>
+	<key>LimitLoadToSessionType</key>
+	<array>
+		<string>Aqua</string>
+		<string>Background</string>
+		<string>LoginWindow</string>
+		<string>StandardIO</string>
+		<string>System</string>
+	</array>
+	<key>StandardOutPath</key>
+	<string>LOG_DIR/borders.out.log</string>
+	<key>StandardErrorPath</key>
+	<string>LOG_DIR/borders.err.log</string>
+</dict>
+</plist>
