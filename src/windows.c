@@ -174,13 +174,13 @@ static bool windows_window_focus(struct table* windows, uint32_t wid) {
         if (border->focused && border->target_wid != wid) {
           border->focused = false;
           border->needs_redraw = true;
-          border_update(border, true);
+          border_update(border, false);
         }
 
         if (!border->focused && border->target_wid == wid) {
           border->focused = true;
           border->needs_redraw = true;
-          border_update(border, true);
+          border_update(border, false);
         }
 
         if (border->target_wid == wid) found_window = true;

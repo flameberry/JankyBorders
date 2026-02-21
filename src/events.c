@@ -3,9 +3,43 @@
 #include "windows.h"
 #include "border.h"
 #include "misc/window.h"
+#include <dispatch/dispatch.h>
 
 extern struct table g_windows;
 extern pid_t g_pid;
+
+#define FOCUS_DEBOUNCE_MS 20
+
+static dispatch_source_t g_focus_timer;
+static bool g_focus_timer_suspended = true;
+
+static void schedule_focus_check(void) {
+  /* Run once immediately so the border can update as soon as the main runloop runs. */
+  dispatch_async(dispatch_get_main_queue(), ^{
+    windows_determine_and_focus_active_window(&g_windows);
+  });
+  /* Also schedule a debounced run so rapid focus changes coalesce and we don’t flicker. */
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (!g_focus_timer) {
+      g_focus_timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
+                                             dispatch_get_main_queue());
+      if (!g_focus_timer) return;
+      dispatch_source_set_event_handler(g_focus_timer, ^{
+        dispatch_suspend(g_focus_timer);
+        g_focus_timer_suspended = true;
+        windows_determine_and_focus_active_window(&g_windows);
+      });
+    }
+    dispatch_source_set_timer(g_focus_timer,
+                              dispatch_time(DISPATCH_TIME_NOW, FOCUS_DEBOUNCE_MS * NSEC_PER_MSEC),
+                              DISPATCH_TIME_FOREVER,
+                              5 * NSEC_PER_MSEC);
+    if (g_focus_timer_suspended) {
+      dispatch_resume(g_focus_timer);
+      g_focus_timer_suspended = false;
+    }
+  });
+}
 
 #ifdef DEBUG
 static void dump_event(void* data, size_t data_length) {
@@ -70,17 +104,13 @@ static void window_modify_handler(uint32_t event, uint32_t* window_id, size_t _,
   } else if (event == EVENT_WINDOW_REORDER) {
     debug("Window Reorder (and focus): %d\n", wid);
     windows_window_update(windows, wid);
-    DELAY_ASYNC_EXEC_ON_MAIN_THREAD(10000, {
-      windows_determine_and_focus_active_window(windows);
-    });
+    schedule_focus_check();
   } else if (event == EVENT_WINDOW_LEVEL) {
     debug("Window Level: %d\n", wid);
     windows_window_update(windows, wid);
   } else if (event == EVENT_WINDOW_TITLE || event == EVENT_WINDOW_UPDATE) {
     debug("Window Focus\n");
-    DELAY_ASYNC_EXEC_ON_MAIN_THREAD(50000, {
-      windows_determine_and_focus_active_window(windows);
-    });
+    schedule_focus_check();
   } else if (event == EVENT_WINDOW_UNHIDE) {
     debug("Window Unhide: %d\n", wid);
     windows_window_unhide(windows, wid);
@@ -95,9 +125,7 @@ static void window_modify_handler(uint32_t event, uint32_t* window_id, size_t _,
 
 static void front_app_handler() {
   debug("Window Focus\n");
-  DELAY_ASYNC_EXEC_ON_MAIN_THREAD(50000, {
-    windows_determine_and_focus_active_window(&g_windows);
-  });
+  schedule_focus_check();
 }
 
 static void space_handler() {
